@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ Футбольная Аналитика</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        /* ===== СКРЫТАЯ КНОПКА ВХОДА ===== */
+        .admin-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .admin-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            color: rgba(102, 126, 234, 0.6);
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО ВХОДА ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #fefcbf;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            color: #dc2626;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-login {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            flex: 1;
+        }
+
+        .btn-login:hover {
+            background: #991b1b;
+        }
+
+        .btn-close {
+            background: #ccc;
+            color: black;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            flex: 1;
+        }
+
+        .btn-close:hover {
+            background: #999;
+        }
+
+        /* ===== АДМИН-ПАНЕЛЬ ===== */
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.show {
+            display: block;
+        }
+
+        .viewer-section.hide {
+            display: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            color: #1e293b;
+            font-size: 2.5em;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .live-dot {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        /* ===== АДМИН-ФОРМА ===== */
+        .admin-panel {
+            background: #fef2f2;
+            border: 2px dashed #f87171;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .admin-panel h3 {
+            color: #dc2626;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .admin-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .admin-form input,
+        .admin-form select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95em;
+        }
+
+        .admin-form input:focus,
+        .admin-form select:focus {
+            outline: none;
+            border-color: #059669;
+            box-shadow: 0 0 5px rgba(5, 150, 105, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-add {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .btn-add:hover {
+            background: #047857;
+        }
+
+        .btn-clear {
+            background: #f97316;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-clear:hover {
+            background: #ea580c;
+        }
+
+        /* ===== ТАБЛИЦА ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .rank-1 {
+            background: linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%) !important;
+            border-left: 5px solid #fbbf24;
+        }
+
+        .medal {
+            font-weight: bold;
+            padding: 6px 14px;
+            border-radius: 8px;
+            display: inline-block;
+            font-size: 1.1em;
+        }
+
+        .gold {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+        }
+
+        .silver {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #334155;
+        }
+
+        .bronze {
+            background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+            color: #92400e;
+        }
+
+        .goals-count {
+            font-weight: bold;
+            color: #2563eb;
+            font-size: 1.3em;
+        }
+
+        .status-passed {
+            color: #059669;
+            font-weight: bold;
+            background: #ecfdf5;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .status-eliminated {
+            color: #dc2626;
+            font-weight: bold;
+            background: #fee2e2;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .btn-delete {
+            color: #ef4444;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .btn-delete:hover {
+            color: #dc2626;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #94a3b8;
+            padding: 60px 20px;
+            font-size: 1.2em;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-bar input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 999;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .toast.success {
+            background: #22c55e;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.info {
+            background: #3b82f6;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- СКРЫТАЯ КНОПКА ВХОДА -->
+    <button class="admin-btn" onclick="openLoginModal()" title="Вход для администраторов">⚙️</button>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВХОДА -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>🔐 Вход администратора</h2>
+            <input type="password" id="passwordInput" placeholder="Введите пароль" onkeypress="if(event.key==='Enter') login()">
+            <div class="modal-buttons">
+                <button class="btn-login" onclick="login()">Войти</button>
+                <button class="btn-close" onclick="closeLoginModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- ===== ЗРИТЕЛЬ-САЙТ ===== -->
+        <div class="viewer-section" id="viewerSection">
+            <div class="header">
+                <h1>⚽ Живая Таблица</h1>
+                <div class="header-right">
+                    <div class="live-indicator">
+                        <span class="live-dot"></span>
+                        В эфире
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Всего голов</div>
+                    <div class="stat-value" id="viewerTotalGoals">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Команд в турнире</div>
+                    <div class="stat-value" id="viewerTotalTeams">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Лидер</div>
+                    <div class="stat-value" id="viewerLeaderName" style="font-size: 1.5em;">—</div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="viewerSearchInput" placeholder="🔍 Поиск клуба или бомбардира..." onkeyup="filterViewerTable()">
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Футбольный клуб</th>
+                        <th>Игрок</th>
+                        <th>Голы</th>
+                        <th>Турнир</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="viewerTableBody">
+                </tbody>
+            </table>
+
+            <div id="viewerEmptyMessage" class="empty-message">⏳ Ожидание данных с прямого эфира...</div>
+        </div>
+
+        <!-- ===== АДМИН-ПАНЕЛЬ ===== -->
+        <div class="admin-section" id="adminSection">
+            <div class="header">
+                <h1>📊 Админ Панель</h1>
+                <div class="header-right">
+                    <div style="background: #1e3a8a; color: white; padding: 10px 20px; border-radius: 50px; font-weight: bold;">
+                        Голов: <span id="adminTotalGoals">0</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Выход</button>
+                </div>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Администрирование данных</h3>
+                <div class="admin-form">
+                    <input type="text" id="clubName" placeholder="Клуб" required>
+                    <input type="text" id="playerName" placeholder="Бомбардир">
+                    <input type="number" id="goals" placeholder="Голы" min="0">
+                    <input type="text" id="tournament" placeholder="Турнир">
+                    <select id="status">
+                        <option value="Прошел">Прошел</option>
+                        <option value="Выбыл">Выбыл</option>
+                    </select>
+                    <div class="button-group">
+                        <button class="btn-add" onclick="addRow()">Сохранить</button>
+                        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Футбольный клуб</th>
+                        <th>Игрок</th>
+                        <th>Голы</th>
+                        <th>Турнир</th>
+                        <th>Статус</th>
+                        <th>Удалить</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody">
+                </tbody>
+            </table>
+
+            <div id="adminEmptyMessage" class="empty-message">Таблица пуста. Добавьте данные.</div>
+        </div>
+    </div>
+
+    <script>
+        // ===== ПЕРЕМЕННЫЕ =====
+        const PASSWORD = "admin123"; // ПАРОЛЬ
+        let isAdmin = false;
+        let data = [];
+
+        // ===== АВТОРИЗАЦИЯ =====
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.add('show');
+            document.getElementById('passwordInput').focus();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('show');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            
+            if (password === PASSWORD) {
+                isAdmin = true;
+                closeLoginModal();
+                document.getElementById('viewerSection').classList.add('hide');
+                document.getElementById('adminSection').classList.add('show');
+                showToast('✓ Вы вошли как администратор', 'success');
+                loadData();
+            } else {
+                showToast('✗ Неверный пароль', 'error');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            document.getElementById('adminSection').classList.remove('show');
+            document.getElementById('viewerSection').classList.remove('hide');
+            showToast('✓ Вы вышли', 'info');
+        }
+
+        // ===== РАБОТА С ДАННЫМИ =====
+        async function loadData() {
+            try {
+                const result = await window.storage.get('football-data');
+                if (result && result.value) {
+                    data = JSON.parse(result.value);
+                }
+            } catch (error) {
+                data = [];
+            }
+            
+            sortData();
+            renderAdminTable();
+            renderViewerTable();
+        }
+
+        async function saveData() {
+            try {
+                await window.storage.set('football-data', JSON.stringify(data));
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+            }
+        }
+
+        function sortData() {
+            data.sort((a, b) => {
+                if (b.goals !== a.goals) return b.goals - a.goals;
+                return a.club.localeCompare(b.club);
+            });
+        }
+
+        async function addRow() {
+            const club = document.getElementById('clubName').value.trim();
+            const player = document.getElementById('playerName').value.trim();
+            const goals = parseInt(document.getElementById('goals').value) || 0;
+            const tournament = document.getElementById('tournament').value.trim();
+            const status = document.getElementById('status').value;
+
+            if (!club) {
+                showToast('Введите название клуба', 'error');
+                return;
+            }
+
+            data.push({
+                id: Date.now(),
+                club: club,
+                player: player || '—',
+                goals: goals,
+                tournament: tournament || '—',
+                status: status
+            });
+
+            sortData();
+            await saveData();
+            renderAdminTable();
+            renderViewerTable();
+            showToast('✓ Данные добавлены успешно!', 'success');
+            clearInputs();
+        }
+
+        async function deleteRow(id) {
+            if (!confirm('Вы уверены?')) return;
+            
+            data = data.filter(row => row.id !== id);
+            await saveData();
+            renderAdminTable();
+            renderViewerTable();
+            showToast('✓ Запись удалена', 'success');
+        }
+
+        // ===== ОТРИСОВКА ТАБЛИЦ =====
+        function renderAdminTable(filteredData = data) {
+            const tableBody = document.getElementById('adminTableBody');
+            const emptyMessage = document.getElementById('adminEmptyMessage');
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '';
+                emptyMessage.style.display = 'block';
+                document.getElementById('adminTotalGoals').textContent = '0';
+                return;
+            }
+
+            emptyMessage.style.display = 'none';
+            const totalGoals = data.reduce((sum, row) => sum + row.goals, 0);
+            document.getElementById('adminTotalGoals').textContent = totalGoals;
+
+            tableBody.innerHTML = filteredData.map((row, index) => {
+                let medal = '';
+                let rowClass = '';
+                const place = index + 1;
+
+                if (place === 1) {
+                    medal = '<span class="medal gold">🥇 1</span>';
+                    rowClass = 'rank-1';
+                } else if (place === 2) {
+                    medal = '<span class="medal silver">🥈 2</span>';
+                } else if (place === 3) {
+                    medal = '<span class="medal bronze">🥉 3</span>';
+                } else {
+                    medal = place;
+                }
+
+                const statusClass = row.status === 'Прошел' ? 'status-passed' : 'status-eliminated';
+
+                return `
+                    <tr class="${rowClass}">
+                        <td>${medal}</td>
+                        <td><strong>${row.club}</strong></td>
+                        <td>${row.player}</td>
+                        <td><span class="goals-count">${row.goals}</span></td>
+                        <td>${row.tournament}</td>
+                        <td><span class="${statusClass}">${row.status}</span></td>
+                        <td><button class="btn-delete" onclick="deleteRow(${row.id})">✕</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderViewerTable(filteredData = data) {
+            const tableBody = document.getElementById('viewerTableBody');
+            const emptyMessage = document.getElementById('viewerEmptyMessage');
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    emptyMessage.style.display = 'block';
+                }
+                updateViewerStats();
+                return;
+            }
+
+            emptyMessage.style.display = 'none';
+
+            tableBody.innerHTML = filteredData.map((row, index) => {
+                let medal = '';
+                let rowClass = '';
+                const place = index + 1;
+
+                if (place === 1) {
+                    medal = '<span class="medal gold">🥇 1</span>';
+                    rowClass = 'rank-1';
+                } else if (place === 2) {
+                    medal = '<span class="medal silver">🥈 2</span>';
+                } else if (place === 3) {
+                    medal = '<span class="medal bronze">🥉 3</span>';
+                } else {
+                    medal = place;
+                }
+
+                const statusClass = row.status === 'Прошел' ? 'status-passed' : 'status-eliminated';
+
+                return `
+                    <tr class="${rowClass}">
+                        <td>${medal}</td>
+                        <td><strong>${row.club}</strong></td>
+                        <td>${row.player}</td>
+                        <td><span class="goals-count">${row.goals}</span></td>
+                        <td>${row.tournament}</td>
+                        <td><span class="${statusClass}">${row.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateViewerStats();
+        }
+
+        function updateViewerStats() {
+            const totalGoals = data.reduce((sum, row) => sum + row.goals, 0);
+            const totalTeams = data.length;
+            const leader = data.length > 0 ? data[0].club : '—';
+
+            document.getElementById('viewerTotalGoals').textContent = totalGoals;
+            document.getElementById('viewerTotalTeams').textContent = totalTeams;
+            document.getElementById('viewerLeaderName').textContent = leader;
+        }
+
+        function filterViewerTable() {
+            const searchValue = document.getElementById('viewerSearchInput').value.toLowerCase();
+            const filtered = data.filter(row =>
+                row.club.toLowerCase().includes(searchValue) ||
+                row.player.toLowerCase().includes(searchValue)
+            );
+            renderViewerTable(filtered);
+        }
+
+        function clearInputs() {
+            document.getElementById('clubName').value = '';
+            document.getElementById('playerName').value = '';
+            document.getElementById('goals').value = '';
+            document.getElementById('tournament').value = '';
+            document.getElementById('status').value = 'Прошел';
+            document.getElementById('clubName').focus();
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Загружаем данные при загрузке страницы и обновляем каждые 2 сек
+        loadData();
+        setInterval(loadData, 2000);
+
+        // Закрытие модального окна по клику на фон
+        document.getElementById('loginModal').addEventListener('click', (e) => {
+            if (e.target.id === 'loginModal') closeLoginModal();
+        });
+    </script>
+</body>
+</html>
